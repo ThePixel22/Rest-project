@@ -30,8 +30,7 @@ public class EmployeeController {
     @GetMapping("/employees")
     public CollectionModel<EntityModel<Employee>> all() {
         List<EntityModel<Employee>> employees = repository.findAll().stream()
-                .map(employee -> EntityModel.of(employee,
-                        linkTo(methodOn(EmployeeController.class).findOne(employee.getId())).withSelfRel()))
+                .map(employee -> employeeModelAssembler.toModel(employee))
                 .collect(Collectors.toList());
         return CollectionModel.of(employees,linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
@@ -44,9 +43,7 @@ public class EmployeeController {
     @GetMapping("/employees/{id}")
     public EntityModel<Employee> findOne(@PathVariable Long id) {
         Employee employee = repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));
-        return EntityModel.of(employee,
-                linkTo(methodOn(EmployeeController.class).findOne(id)).withSelfRel(),
-                linkTo(methodOn(EmployeeController.class).all()).withRel("employees"));
+        return employeeModelAssembler.toModel(employee);
     }
 
     @PutMapping("/employees/{id}")
