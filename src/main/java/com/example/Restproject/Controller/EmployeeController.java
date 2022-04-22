@@ -1,26 +1,39 @@
 package com.example.Restproject.Controller;
 
 import com.example.Restproject.Exception.EmployeeNotFoundException;
+import com.example.Restproject.Model.Assembler.EmployeeModelAssembler;
 import com.example.Restproject.Model.Employee;
 import com.example.Restproject.Repositories.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.hateoas.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 public class EmployeeController {
-    //@Autowired
+
+    @Autowired
     private EmployeeRepository repository;
 
-    EmployeeController(EmployeeRepository repository) {
+    @Autowired
+    private EmployeeModelAssembler employeeModelAssembler;
+
+    /*EmployeeController(EmployeeRepository repository) {
         this.repository = repository;
-    }
+    }*/
 
     @GetMapping("/employees")
-    List<Employee> all() {
-        return repository.findAll();
+    public CollectionModel<EntityModel<Employee>> all() {
+        List<EntityModel<Employee>> employees = repository.findAll().stream()
+                .map(employee -> EntityModel.of(employee,
+                        linkTo(methodOn(EmployeeController.class).findOne(employee.getId())).withSelfRel()))
+                .collect(Collectors.toList());
+        return CollectionModel.of(employees,linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
 
     @PostMapping("/employees")
@@ -29,8 +42,11 @@ public class EmployeeController {
     }
 
     @GetMapping("/employees/{id}")
-    Employee findOne(@PathVariable Long id) {
-        return repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));
+    public EntityModel<Employee> findOne(@PathVariable Long id) {
+        Employee employee = repository.findById(id).orElseThrow(() -> new EmployeeNotFoundException(id));
+        return EntityModel.of(employee,
+                linkTo(methodOn(EmployeeController.class).findOne(id)).withSelfRel(),
+                linkTo(methodOn(EmployeeController.class).all()).withRel("employees"));
     }
 
     @PutMapping("/employees/{id}")
