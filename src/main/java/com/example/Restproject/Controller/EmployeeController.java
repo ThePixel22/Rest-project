@@ -30,7 +30,7 @@ public class EmployeeController {
     @GetMapping("/employees")
     public CollectionModel<EntityModel<Employee>> all() {
         List<EntityModel<Employee>> employees = repository.findAll().stream()
-                .map(employee -> employeeModelAssembler.toModel(employee))
+                .map(employeeModelAssembler::toModel)
                 .collect(Collectors.toList());
         return CollectionModel.of(employees,linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
